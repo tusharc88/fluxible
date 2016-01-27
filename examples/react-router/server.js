@@ -21,40 +21,40 @@ server.use('/public', express['static'](__dirname + '/build'));
 
 server.use(function (req, res, next) {
 
-	debug('Executing navigate action');
-	match({
-		routes:app.getComponent(),
-		location: req.url
-	}, function (error, redirectLocation, renderProps) {
-		if (error) {
-			res.status(500).send(error.message);
-		} else if (redirectLocation) {
-			res.redirect(302, redirectLocation.pathname + redirectLocation.search);
-		} else if (renderProps) {
-			var context = app.createContext();
-			context.executeAction(navigateAction, {path: req.url}, function () {
-				debug('Exposing context state');
-				var exposed = 'window.App=' + serialize(app.dehydrate(context)) + ';';
-				var Component = React.createFactory(RoutingContext);
-				renderProps.context = context.getComponentContext();
-				var markupElement = React.createElement(
-	                FluxibleComponent,
-	                { context: context.getComponentContext() },
-	                Component(renderProps)
-	            );
-			    var html = React.renderToStaticMarkup(HtmlComponent({
-			        context: context.getComponentContext(),
-			        state: exposed,
-			        markup: markupElement
-			    }));
+    debug('Executing navigate action');
+    match({
+        routes:app.getComponent(),
+        location: req.url
+    }, function (error, redirectLocation, renderProps) {
+        if (error) {
+            res.status(500).send(error.message);
+        } else if (redirectLocation) {
+            res.redirect(302, redirectLocation.pathname + redirectLocation.search);
+        } else if (renderProps) {
+            var context = app.createContext();
+            context.executeAction(navigateAction, {path: req.url}, function () {
+                debug('Exposing context state');
+                var exposed = 'window.App=' + serialize(app.dehydrate(context)) + ';';
+                var Component = React.createFactory(RoutingContext);
+                renderProps.context = context.getComponentContext();
+                var markupElement = React.createElement(
+                    FluxibleComponent,
+                    { context: context.getComponentContext() },
+                    Component(renderProps)
+                );
+                var html = React.renderToStaticMarkup(HtmlComponent({
+                    context: context.getComponentContext(),
+                    state: exposed,
+                    markup: markupElement
+                }));
 
-				debug('Sending markup');
-				res.status(200).send(html);
-			});
-		} else {
-			next();
-		}
-	})
+                debug('Sending markup');
+                res.status(200).send(html);
+            });
+        } else {
+            next();
+        }
+    })
 });
 
 var port = process.env.PORT || 3000;
