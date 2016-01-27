@@ -12,7 +12,8 @@
   "dependencies": {
     "fluxible": "^0.5.0",
     "fluxible-addons-react": "^0.1.6",
+    "history": "^1.17.0",
     "react": "^0.13.0",
-    "react-router": "^0.13.1"
+    "react-router": "^1.0.0"
   }
 }
