@@ -7,6 +7,8 @@ var express = require('express');
 var favicon = require('serve-favicon');
 var serialize = require('serialize-javascript');
 var navigateAction = require('./actions/navigate');
+var renderToStaticMarkup = require('react-dom/server').renderToStaticMarkup;
+var renderToString = require('react-dom/server').renderToString;
 var debug = require('debug')('Example');
 var React = require('react');
 var app = require('./app');
@@ -20,10 +22,9 @@ var server = express();
 server.use('/public', express['static'](__dirname + '/build'));
 
 server.use(function (req, res, next) {
-
     debug('Executing navigate action');
     match({
-        routes:app.getComponent(),
+        routes: app.getComponent(),
         location: req.url
     }, function (error, redirectLocation, renderProps) {
         if (error) {
@@ -35,17 +36,15 @@ server.use(function (req, res, next) {
             context.executeAction(navigateAction, {path: req.url}, function () {
                 debug('Exposing context state');
                 var exposed = 'window.App=' + serialize(app.dehydrate(context)) + ';';
-                var Component = React.createFactory(RoutingContext);
-                renderProps.context = context.getComponentContext();
                 var markupElement = React.createElement(
-                    FluxibleComponent,
-                    { context: context.getComponentContext() },
-                    Component(renderProps)
-                );
-                var html = React.renderToStaticMarkup(HtmlComponent({
+                        FluxibleComponent,
+                        { context: context.getComponentContext() },
+                        React.createElement(RoutingContext, renderProps)
+                    );
+                var html = renderToStaticMarkup(HtmlComponent({
                     context: context.getComponentContext(),
                     state: exposed,
-                    markup: markupElement
+                    markup: renderToString(markupElement)
                 }));
 
                 debug('Sending markup');

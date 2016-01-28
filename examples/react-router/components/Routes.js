@@ -6,7 +6,7 @@ import About from './About';
 
 const routes = (
     <Route name="app" path="/" component={Application}>
-        <Route name="about" component={About} />
+        <Route name="about" path="about" component={About} />
         <IndexRoute name="home" component={Home} />
     </Route>
 );
