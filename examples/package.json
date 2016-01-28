@@ -20,7 +20,7 @@
     "history": "^1.17.0",
     "react": "0.14.x",
     "react-dom": "0.14.x",
-    "react-router": "^1.0.0-rc3",
+    "react-router": "^1.0.3",
     "serialize-javascript": "^1.0.0",
     "serve-favicon": "^2.1.6"
   },
