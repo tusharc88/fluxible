@@ -5,6 +5,7 @@
 'use strict';
 
 var debug = require('debug')('Fluxible:Context');
+var debugP = require('debug')('PERF');
 var isPromise = require('is-promise');
 var generateUUID = require('../utils/generateUUID');
 var callAction = require('../utils/callAction');
@@ -310,7 +311,7 @@ FluxContext.prototype.dehydrate = function dehydrate() {
  * @param {Object} obj.plugins Dehydrated context plugin state
  * @param {Object} obj.dispatcher Dehydrated dispatcher state
  */
-FluxContext.prototype.rehydrate = function rehydrate(obj) {
+FluxContext.prototype.rehydrate = function rehydrate(obj, options) {
     var self = this;
     if (__DEV__) {
         if (typeof obj !== 'object') {
@@ -319,13 +320,16 @@ FluxContext.prototype.rehydrate = function rehydrate(obj) {
                 'produced by a dehydrate call.');
         }
     }
+    var contextRehydrateStart = Date.now();
     obj.plugins = obj.plugins || {};
     var pluginTasks = self._plugins.filter(function (plugin) {
         return 'function' === typeof plugin.rehydrate
             && obj.plugins[plugin.name];
     }).map(function (plugin) {
         return new Promise(function (resolve, reject) {
+            var pluginStart = Date.now();
             var result = plugin.rehydrate(obj.plugins[plugin.name], function (err) {
+                debugP(plugin.name + ' rehydration ', Date.now() - pluginStart);
                 if (err) {
                     reject(err);
                 } else {
@@ -333,18 +337,33 @@ FluxContext.prototype.rehydrate = function rehydrate(obj) {
                 }
             });
             if (isPromise(result)) {
+                debugP(plugin.name + ' rehydration ', Date.now() - pluginStart);
                 result.then(resolve, reject);
             } else if (plugin.rehydrate.length < 2) {
+                debugP(plugin.name + ' rehydration ', Date.now() - pluginStart);
                 resolve();
             }
         });
     });
 
     return Promise.all(pluginTasks).then(function rehydratePluginTasks() {
+        debugP('Plugin context rehydration', Date.now() - contextRehydrateStart);
         self._dispatcher = self._app.createDispatcherInstance(self.getStoreContext());
-        self._dispatcher.rehydrate(obj.dispatcher || {});
+if (options.rehydrateStores !== false) {
+    // if reydrateStores is set to false, will skip store rehydration
+    var now = Date.now();
+    self._dispatcher.rehydrate(obj.dispatcher || {});
+    debugP('Store rehydration', Date.now() - now);
+}
         return self;
     });
+};
+
+/**
+ * Rehydrates the store in storeList only
+ */
+FluxContext.prototype.rehydrateStores = function rehydrate(obj, storeList) {
+    this._dispatcher.rehydrate(obj.dispatcher || {}, storeList);
 };
 
 module.exports = FluxContext;

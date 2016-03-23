@@ -5,6 +5,7 @@
 'use strict';
 
 var debug = require('debug')('Fluxible');
+var debugP = require('debug')('PERF');
 var isPromise = require('is-promise');
 var FluxibleContext = require('./FluxibleContext');
 var dispatchr = require('dispatchr');
@@ -172,7 +173,7 @@ Fluxible.prototype.dehydrate = function dehydrate(context) {
  * @param {Function} callback
  * @async Rehydration may require more asset loading or async IO calls
  */
-Fluxible.prototype.rehydrate = function rehydrate(obj, callback) {
+Fluxible.prototype.rehydrate = function rehydrate(obj, options, callback) {
     debug('rehydrate', obj);
     var self = this;
     if (__DEV__) {
@@ -183,6 +184,7 @@ Fluxible.prototype.rehydrate = function rehydrate(obj, callback) {
         }
     }
     obj.plugins = obj.plugins || {};
+    var appRehydrateStart = Date.now();
     var pluginTasks = self._plugins.filter(function (plugin) {
         return 'function' === typeof plugin.rehydrate
             && obj.plugins[plugin.name];
@@ -205,7 +207,8 @@ Fluxible.prototype.rehydrate = function rehydrate(obj, callback) {
 
     var context = self.createContext();
     var rehydratePromise = Promise.all(pluginTasks).then(function rehydratePluginTasks() {
-        return context.rehydrate(obj.context || {});
+        debugP('App rehydration', Date.now() - appRehydrateStart);
+        return context.rehydrate(obj.context || {}, options);
     });
 
     if (callback) {

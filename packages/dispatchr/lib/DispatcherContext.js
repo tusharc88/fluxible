@@ -7,6 +7,7 @@
 var Action = require('./Action');
 var DEFAULT = 'default';
 var debug = require('debug')('Dispatchr:DispatcherContext');
+var debugP = require('debug')('PERF');
 
 /**
  * @class Dispatcher
@@ -122,14 +123,22 @@ DispatcherContext.prototype.dehydrate = function dehydrate() {
  * @param {Object} dispatcherState raw state typically retrieved from `dehydrate`
  *      method
  */
-DispatcherContext.prototype.rehydrate = function rehydrate(dispatcherState) {
+DispatcherContext.prototype.rehydrate = function rehydrate(dispatcherState, storeList) {
     var self = this;
     if (dispatcherState.stores) {
         Object.keys(dispatcherState.stores).forEach(function storeStateEach(storeName) {
+if (storeList && storeList.indexOf(storeName) === -1) {
+    // skip rehydrate if store is not in storeList
+    debug('skipping rehydrate for ', storeName);
+    return;
+}
             var state = dispatcherState.stores[storeName],
                 store = self.getStore(storeName);
-            if (store.rehydrate) {
+            if (!store.rehydrated && store.rehydrate) {
+                var now = Date.now();
                 store.rehydrate(state);
+                store.rehydrated = true; // rehydrate store only once
+                debugP('rehydrate time', storeName, Date.now() - now);
             }
         });
     }
